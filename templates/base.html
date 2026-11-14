@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Overview{% endblock %} - Cafeteria Billing System</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Main Style -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/receipt.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="brand-logo">
+                    <div class="logo-icon">
+                        <i class="fa-solid fa-mug-hot"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h2>Cafeteria</h2>
+                        <span>Billing System</span>
+                    </div>
+                </div>
+                <button class="mobile-close-btn" id="sidebarCloseBtn" aria-label="Close sidebar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section-label">MAIN MENU</div>
+                <ul class="nav-list">
+                    <li>
+                        <a href="{{ url_for('dashboard') }}" class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+                            <i class="fa-solid fa-chart-pie"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('billing') }}" class="nav-item {% if active_page == 'billing' %}active{% endif %}">
+                            <i class="fa-solid fa-receipt"></i>
+                            <span>New Bill (POS)</span>
+                            <span class="badge-pill pulse">Live</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('menu_page') }}" class="nav-item {% if active_page == 'menu' %}active{% endif %}">
+                            <i class="fa-solid fa-utensils"></i>
+                            <span>Menu Items</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('history') }}" class="nav-item {% if active_page == 'history' %}active{% endif %}">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>Order History</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url_for('reports') }}" class="nav-item {% if active_page == 'reports' %}active{% endif %}">
+                            <i class="fa-solid fa-chart-line"></i>
+                            <span>Sales Reports</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="nav-section-label">QUICK ACTIONS</div>
+                <div class="sidebar-quick-actions">
+                    <a href="{{ url_for('billing') }}" class="btn-quick-order">
+                        <i class="fa-solid fa-plus-circle"></i>
+                        <span>Start New Bill</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <span class="status-dot"></span>
+                    <div class="status-info">
+                        <strong>POS Online</strong>
+                        <small>SQLite Database Active</small>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="main-wrapper">
+            <!-- Top Navigation Bar -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button class="mobile-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle navigation">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="page-title-box">
+                        <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+                        <span class="breadcrumb-sub">{% block breadcrumb %}Overview & Performance{% endblock %}</span>
+                    </div>
+                </div>
+
+                <!-- Unified Top Navigation Pill Bar -->
+                <nav class="topbar-nav-tabs" aria-label="Quick Navigation">
+                    <a href="{{ url_for('dashboard') }}" class="top-nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+                        <i class="fa-solid fa-chart-pie"></i> <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('billing') }}" class="top-nav-link {% if active_page == 'billing' %}active{% endif %}">
+                        <i class="fa-solid fa-cash-register"></i> <span>POS Billing</span>
+                    </a>
+                    <a href="{{ url_for('menu_page') }}" class="top-nav-link {% if active_page == 'menu' %}active{% endif %}">
+                        <i class="fa-solid fa-utensils"></i> <span>Menu Items</span>
+                    </a>
+                    <a href="{{ url_for('history') }}" class="top-nav-link {% if active_page == 'history' %}active{% endif %}">
+                        <i class="fa-solid fa-clock-rotate-left"></i> <span>Order History</span>
+                    </a>
+                    <a href="{{ url_for('reports') }}" class="top-nav-link {% if active_page == 'reports' %}active{% endif %}">
+                        <i class="fa-solid fa-chart-line"></i> <span>Sales Reports</span>
+                    </a>
+                </nav>
+
+                <div class="topbar-right">
+                    <div class="current-time-badge" id="liveClock">
+                        <i class="fa-regular fa-clock"></i>
+                        <span id="clockText">--:--:--</span>
+                    </div>
+
+                    <a href="{{ url_for('billing') }}" class="btn btn-primary btn-sm header-action-btn">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Quick Bill</span>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Page Body Content -->
+            <main class="page-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages-container">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ category }}">
+                                    <i class="fa-solid {% if category == 'success' %}fa-circle-check{% elif category == 'error' %}fa-circle-xmark{% else %}fa-circle-info{% endif %}"></i>
+                                    <span>{{ message }}</span>
+                                    <button class="alert-close" onclick="this.parentElement.remove();">&times;</button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+
+            <!-- Footer -->
+            <footer class="app-footer">
+                <p>&copy; 2026 Cafeteria Billing System &bull; Fast, Reliable & Offline-Ready POS</p>
+                <div class="footer-links">
+                    <span>Currency: INR (₹)</span>
+                    <span>&bull;</span>
+                    <span>Default GST: 5.0%</span>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Global Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Global Receipt Modal Container -->
+    <div id="receiptModal" class="modal-overlay">
+        <div class="modal-card receipt-modal-card">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-receipt"></i> Transaction Receipt</h3>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary btn-sm" id="modalPrintBtn" onclick="printModalReceipt()">
+                        <i class="fa-solid fa-print"></i> Print Receipt
+                    </button>
+                    <button type="button" class="modal-close" onclick="closeReceiptModal()">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body receipt-modal-body" id="receiptModalBody">
+                <!-- Injected dynamically via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

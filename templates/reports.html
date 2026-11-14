@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Analytics & Reports - Cafeteria Billing System{% endblock %}
+{% block page_title %}Sales & Performance Reports{% endblock %}
+{% block breadcrumb %}Comprehensive sales breakdown, popular menu items, and revenue analytics{% endblock %}
+
+{% block extra_css %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="reports-page">
+    <!-- Printable Formal Header (Visible only when Printing / Saving as PDF) -->
+    <div class="print-report-header">
+        <div class="print-header-top">
+            <div class="print-brand">
+                <div class="print-brand-icon"><i class="fa-solid fa-mug-hot"></i></div>
+                <div>
+                    <h2>Campus Cafe & Food Court</h2>
+                    <p>Student Activity Center, Campus North Block | GSTIN: 07AAAAA0000A1Z5</p>
+                </div>
+            </div>
+            <div class="print-meta">
+                <div class="print-report-tag">SALES AUDIT REPORT</div>
+                <div class="print-meta-line"><strong>Report Period:</strong> 
+                    {% if period == 'today' %}Today
+                    {% elif period == 'week' %}Last 7 Days
+                    {% elif period == 'month' %}Last 30 Days
+                    {% elif period == 'all' %}All Time
+                    {% elif period == 'custom' %}{{ start_date }} to {{ end_date }}
+                    {% else %}{{ period | capitalize }}
+                    {% endif %}
+                </div>
+                <div class="print-meta-line"><strong>Generated At:</strong> <span class="auto-print-timestamp"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Period Selector Toolbar -->
+    <div class="reports-toolbar content-card">
+        <div class="toolbar-flex">
+            <div class="period-btn-group">
+                <a href="{{ url_for('reports', period='today') }}" class="period-tab {% if period == 'today' %}active{% endif %}">
+                    <i class="fa-solid fa-calendar-day"></i> Today
+                </a>
+                <a href="{{ url_for('reports', period='week') }}" class="period-tab {% if period == 'week' %}active{% endif %}">
+                    <i class="fa-solid fa-calendar-week"></i> Last 7 Days
+                </a>
+                <a href="{{ url_for('reports', period='month') }}" class="period-tab {% if period == 'month' %}active{% endif %}">
+                    <i class="fa-solid fa-calendar"></i> Last 30 Days
+                </a>
+                <a href="{{ url_for('reports', period='all') }}" class="period-tab {% if period == 'all' %}active{% endif %}">
+                    <i class="fa-solid fa-infinity"></i> All Time
+                </a>
+            </div>
+
+            <!-- Custom Date Filter Form -->
+            <form action="{{ url_for('reports') }}" method="GET" class="custom-range-form">
+                <input type="hidden" name="period" value="custom">
+                <div class="range-inputs">
+                    <input type="date" name="start_date" value="{{ start_date }}" required title="Start Date">
+                    <span>to</span>
+                    <input type="date" name="end_date" value="{{ end_date }}" required title="End Date">
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline">Apply Range</button>
+            </form>
+
+            <div class="report-export-actions">
+                <button type="button" class="btn btn-sm btn-primary" onclick="window.print()" title="Download or print this report as a PDF">
+                    <i class="fa-solid fa-file-pdf"></i> Save / Print as PDF
+                </button>
+                <a href="{{ url_for('history') }}" class="btn btn-sm btn-outline" title="View historical invoice transactions">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Order History
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary KPI Stat Cards -->
+    <div class="kpi-grid">
+        <div class="kpi-card card-orange">
+            <div class="kpi-icon-wrap">
+                <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+            <div class="kpi-details">
+                <span class="kpi-label">Total Revenue</span>
+                <h2 class="kpi-value">{{ report.total_revenue | currency }}</h2>
+                <div class="kpi-subtext">
+                    <span class="pill-badge pill-success">Net Sales</span>
+                    <span>Subtotal: {{ report.total_subtotal | currency }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card card-teal">
+            <div class="kpi-icon-wrap">
+                <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div class="kpi-details">
+                <span class="kpi-label">Total Orders</span>
+                <h2 class="kpi-value">{{ report.total_orders }}</h2>
+                <div class="kpi-subtext">
+                    <span class="pill-badge pill-neutral">Completed</span>
+                    <span>successful checkouts</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card card-amber">
+            <div class="kpi-icon-wrap">
+                <i class="fa-solid fa-chart-pie"></i>
+            </div>
+            <div class="kpi-details">
+                <span class="kpi-label">Average Order Value</span>
+                <h2 class="kpi-value">{{ report.avg_order_value | currency }}</h2>
+                <div class="kpi-subtext">
+                    <span class="pill-badge pill-info">Avg Ticket</span>
+                    <span>per customer</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="kpi-card card-slate">
+            <div class="kpi-icon-wrap">
+                <i class="fa-solid fa-percent"></i>
+            </div>
+            <div class="kpi-details">
+                <span class="kpi-label">Total GST Collected</span>
+                <h2 class="kpi-value">{{ report.total_gst | currency }}</h2>
+                <div class="kpi-subtext">
+                    <span class="pill-badge pill-neutral">Tax</span>
+                    <span>Discounts: {{ report.total_discount | currency }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+        <!-- Daily Revenue Trend Chart -->
+        <div class="content-card chart-card chart-large">
+            <div class="card-header-flex">
+                <div class="header-titles">
+                    <h3><i class="fa-solid fa-chart-line"></i> Revenue Trend (₹)</h3>
+                    <p>Daily sales performance across the selected timeframe</p>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="revenueTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Distribution Chart -->
+        <div class="content-card chart-card">
+            <div class="card-header-flex">
+                <div class="header-titles">
+                    <h3><i class="fa-solid fa-chart-pie"></i> Sales by Category</h3>
+                    <p>Revenue distribution per food category</p>
+                </div>
+            </div>
+            <div class="chart-container chart-donut">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Payment Method Breakdown Chart -->
+        <div class="content-card chart-card">
+            <div class="card-header-flex">
+                <div class="header-titles">
+                    <h3><i class="fa-solid fa-wallet"></i> Payment Methods</h3>
+                    <p>Cash vs UPI vs Card transactions</p>
+                </div>
+            </div>
+            <div class="chart-container chart-donut">
+                <canvas id="paymentChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Selling Menu Items Table -->
+    <div class="content-card">
+        <div class="card-header-flex">
+            <div class="header-titles">
+                <h3><i class="fa-solid fa-fire text-orange"></i> Most Popular Menu Items</h3>
+                <p>Items ranked by total volume sold in this period</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">Rank</th>
+                        <th>Item Name</th>
+                        <th>Category</th>
+                        <th>Total Units Sold</th>
+                        <th>Total Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if report.top_items %}
+                        {% for item in report.top_items %}
+                            <tr>
+                                <td>
+                                    <span class="rank-badge rank-{{ loop.index }}">#{{ loop.index }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ item.item_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="category-badge category-{{ item.category | lower }}">{{ item.category }}</span>
+                                </td>
+                                <td>
+                                    <strong class="text-primary">{{ item.total_quantity }} units</strong>
+                                </td>
+                                <td>
+                                    <strong class="total-amount-cell">{{ item.total_sales | currency }}</strong>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="empty-table-state">
+                                <i class="fa-solid fa-chart-simple fa-2x"></i>
+                                <p>No sales recorded for this period yet.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Hidden Raw JSON for JS Charts -->
+    <script id="reportJsonData" type="application/json">
+        {{ report | tojson }}
+    </script>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+{% endblock %}

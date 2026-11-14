@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Menu Management - Cafeteria Items{% endblock %}
+{% block page_title %}Menu Management{% endblock %}
+{% block breadcrumb %}Add, update, adjust prices and stock availability of food items{% endblock %}
+
+{% block content %}
+<div class="menu-management-page">
+    <!-- Top Control Bar -->
+    <div class="management-toolbar">
+        <div class="toolbar-left">
+            <!-- Search Input -->
+            <form action="{{ url_for('menu_page') }}" method="GET" class="filter-form">
+                <div class="search-input-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="Search menu items..." autocomplete="off">
+                    {% if current_category and current_category != 'all' %}
+                        <input type="hidden" name="category" value="{{ current_category }}">
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-sm btn-outline">Filter</button>
+                {% if search_query or (current_category and current_category != 'all') %}
+                    <a href="{{ url_for('menu_page') }}" class="btn btn-sm btn-ghost">Reset</a>
+                {% endif %}
+            </form>
+
+            <!-- Category Pills -->
+            <div class="category-filter-pills">
+                <a href="{{ url_for('menu_page', category='all', search=search_query) }}"
+                   class="pill-filter {% if not current_category or current_category == 'all' %}active{% endif %}">
+                    All Items
+                </a>
+                {% for cat in ['Snacks', 'Meals', 'Beverages', 'Desserts'] %}
+                    <a href="{{ url_for('menu_page', category=cat, search=search_query) }}"
+                       class="pill-filter {% if current_category == cat %}active{% endif %}">
+                        {{ cat }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="toolbar-right">
+            <button type="button" class="btn btn-primary" onclick="menuApp.openAddModal()">
+                <i class="fa-solid fa-plus-circle"></i> Add New Item
+            </button>
+        </div>
+    </div>
+
+    <!-- Menu Items Table -->
+    <div class="content-card">
+        <div class="card-header-flex">
+            <div class="header-titles">
+                <h3><i class="fa-solid fa-utensils"></i> Food & Beverage Catalog</h3>
+                <p>Showing {{ menu_items | length }} items</p>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Item Details</th>
+                        <th>Category</th>
+                        <th>Price (₹)</th>
+                        <th>Stock Status</th>
+                        <th>Quick Toggle</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if menu_items %}
+                        {% for item in menu_items %}
+                            <tr id="menuRow-{{ item.id }}">
+                                <td>
+                                    <div class="menu-item-cell">
+                                        <div class="diet-icon veg-icon">
+                                            <span class="diet-dot"></span>
+                                        </div>
+                                        <div class="item-text">
+                                            <strong class="item-title">{{ item.name }}</strong>
+                                            {% if item.description %}
+                                                <small class="item-description-text">{{ item.description }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="category-badge category-{{ item.category | lower }}">
+                                        {{ item.category }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong class="item-price-tag">{{ item.price | currency }}</strong>
+                                </td>
+                                <td>
+                                    <span class="stock-status-badge {% if item.is_available == 1 %}stock-in{% else %}stock-out{% endif %}" id="stockBadge-{{ item.id }}">
+                                        {% if item.is_available == 1 %}
+                                            <i class="fa-solid fa-circle-check"></i> In Stock
+                                        {% else %}
+                                            <i class="fa-solid fa-circle-xmark"></i> Out of Stock
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <label class="switch-toggle" title="Click to toggle availability">
+                                        <input type="checkbox" {% if item.is_available == 1 %}checked{% endif %} onchange="menuApp.toggleStock({{ item.id }})">
+                                        <span class="slider"></span>
+                                    </label>
+                                </td>
+                                <td class="text-right">
+                                    <div class="action-buttons-group">
+                                        <button type="button" class="btn btn-xs btn-outline"
+                                                onclick="menuApp.openEditModal({{ item.id }}, '{{ item.name }}', '{{ item.category }}', {{ item.price }}, {{ item.is_available }}, '{{ item.description }}')"
+                                                title="Edit Item">
+                                            <i class="fa-solid fa-pen"></i> Edit
+                                        </button>
+                                        <button type="button" class="btn btn-xs btn-danger-outline"
+                                                onclick="menuApp.confirmDelete({{ item.id }}, '{{ item.name }}')"
+                                                title="Delete Item">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="empty-table-state">
+                                <i class="fa-solid fa-bowl-food fa-2x"></i>
+                                <p>No items found for the selected category or search.</p>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="menuApp.openAddModal()">Add Food Item</button>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add / Edit Item Modal -->
+<div id="itemFormModal" class="modal-overlay">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="modalTitle"><i class="fa-solid fa-bowl-food"></i> Add Menu Item</h3>
+            <button type="button" class="modal-close" onclick="menuApp.closeFormModal()">&times;</button>
+        </div>
+        <form id="menuItemForm" onsubmit="menuApp.saveItem(event)">
+            <input type="hidden" id="itemId">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="itemName">Item Name <span class="required">*</span></label>
+                    <input type="text" id="itemName" required placeholder="e.g. Masala Dosa / Cold Coffee">
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="itemCategory">Category <span class="required">*</span></label>
+                        <select id="itemCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="Snacks">Snacks</option>
+                            <option value="Meals">Meals</option>
+                            <option value="Beverages">Beverages</option>
+                            <option value="Desserts">Desserts</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="itemPrice">Price (₹) <span class="required">*</span></label>
+                        <input type="number" id="itemPrice" min="1" step="0.5" required placeholder="0.00">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="itemDescription">Short Description (Optional)</label>
+                    <textarea id="itemDescription" rows="2" placeholder="e.g. Served with coconut chutney and hot sambar"></textarea>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <label class="custom-checkbox">
+                        <input type="checkbox" id="itemAvailable" checked>
+                        <span>Item is Available & In Stock for orders</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-ghost" onclick="menuApp.closeFormModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btnSaveItem">
+                    <i class="fa-solid fa-save"></i> Save Menu Item
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteConfirmModal" class="modal-overlay">
+    <div class="modal-card modal-card-sm">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-triangle-exclamation text-danger"></i> Delete Item</h3>
+            <button type="button" class="modal-close" onclick="menuApp.closeDeleteModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Are you sure you want to delete <strong id="deleteItemName"></strong>?</p>
+            <small class="text-muted">Previous billing records with this item will keep their original snapshots.</small>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-ghost" onclick="menuApp.closeDeleteModal()">Cancel</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="menuApp.executeDelete()">
+                <i class="fa-solid fa-trash-can"></i> Yes, Delete
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/menu.js') }}"></script>
+{% endblock %}

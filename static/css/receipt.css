@@ -1,0 +1,308 @@
+/* ==========================================================================
+   Thermal Receipt Stylesheet - Authentic 80mm POS Slip Styling
+   ========================================================================== */
+
+.thermal-receipt {
+    width: 100%;
+    max-width: 380px;
+    background-color: #ffffff;
+    color: #111827;
+    font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 24px 20px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    position: relative;
+    margin: 0 auto;
+}
+
+/* Sawtooth jagged paper edges */
+.receipt-sawtooth-top,
+.receipt-sawtooth-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background-size: 12px 6px;
+    background-repeat: repeat-x;
+}
+
+.receipt-sawtooth-top {
+    top: -6px;
+    background-image: linear-gradient(135deg, #ffffff 50%, transparent 50%),
+                      linear-gradient(225deg, #ffffff 50%, transparent 50%);
+}
+
+.receipt-sawtooth-bottom {
+    bottom: -6px;
+    background-image: linear-gradient(315deg, #ffffff 50%, transparent 50%),
+                      linear-gradient(45deg, #ffffff 50%, transparent 50%);
+}
+
+/* Header */
+.receipt-header {
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.cafe-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.cafe-brand i {
+    font-size: 18px;
+    color: #ea580c;
+}
+
+.cafe-brand h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+.cafe-tagline {
+    font-size: 11px;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+}
+
+.cafe-address {
+    font-size: 11px;
+    color: #6b7280;
+}
+
+.cafe-gstin {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* Dividers */
+.receipt-divider-dashed {
+    border-top: 1px dashed #4b5563;
+    margin: 10px 0;
+}
+
+.receipt-divider-solid {
+    border-top: 1.5px solid #111827;
+    margin: 8px 0;
+}
+
+/* Metadata */
+.receipt-meta-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.meta-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.meta-label {
+    color: #4b5563;
+    font-weight: 600;
+}
+
+.meta-val {
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Table */
+.receipt-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin: 6px 0;
+}
+
+.receipt-items-table th {
+    text-align: left;
+    padding: 6px 0;
+    font-weight: 700;
+    border-bottom: 1px dashed #4b5563;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.receipt-items-table td {
+    padding: 5px 0;
+    vertical-align: top;
+}
+
+.th-item, .td-item {
+    width: 48%;
+}
+
+.th-qty, .td-qty {
+    width: 14%;
+    text-align: center;
+}
+
+.th-rate, .td-rate {
+    width: 18%;
+    text-align: right;
+}
+
+.th-amt, .td-amt {
+    width: 20%;
+    text-align: right;
+    font-weight: 600;
+}
+
+.item-line-name {
+    display: block;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.item-line-cat {
+    display: block;
+    font-size: 10px;
+    color: #6b7280;
+}
+
+/* Totals Box */
+.receipt-totals-box {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.discount-row {
+    color: #dc2626;
+}
+
+.grand-total-row {
+    font-size: 16px;
+    font-weight: 800;
+    padding: 4px 0;
+    color: #111827;
+}
+
+.grand-total-price {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+/* QR Code & Barcode */
+.receipt-qr-section {
+    margin: 14px 0 10px 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.qr-mockup {
+    width: 70px;
+    height: 70px;
+    border: 2px solid #111827;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    margin-bottom: 4px;
+}
+
+.qr-label {
+    font-size: 10px;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+
+.receipt-barcode {
+    text-align: center;
+    margin: 10px 0;
+}
+
+.barcode-lines {
+    height: 35px;
+    width: 80%;
+    margin: 0 auto;
+    background: repeating-linear-gradient(
+        90deg,
+        #111827,
+        #111827 2px,
+        transparent 2px,
+        transparent 4px,
+        #111827 4px,
+        #111827 7px,
+        transparent 7px,
+        transparent 9px,
+        #111827 9px,
+        #111827 12px
+    );
+}
+
+.barcode-digits {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-top: 3px;
+    font-weight: 600;
+}
+
+/* Footer Note */
+.receipt-footer {
+    text-align: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px dashed #9ca3af;
+    font-size: 11px;
+    color: #4b5563;
+}
+
+.thank-you-msg {
+    font-weight: 700;
+    font-size: 13px;
+    color: #111827;
+    margin-bottom: 2px;
+}
+
+.footer-note {
+    font-size: 9px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+/* Print Overrides */
+@media print {
+    body {
+        background: transparent !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .thermal-receipt {
+        box-shadow: none !important;
+        border: none !important;
+        max-width: 80mm !important;
+        width: 80mm !important;
+        padding: 4mm !important;
+        margin: 0 auto !important;
+    }
+
+    .receipt-sawtooth-top,
+    .receipt-sawtooth-bottom {
+        display: none !important;
+    }
+}

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt #{{ bill.invoice_number }} - Cafeteria Billing System</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/receipt.css') }}">
+    <style>
+        /* Standalone view actions toolbar */
+        .receipt-page-container {
+            min-height: 100vh;
+            background: #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 15px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .receipt-action-bar {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-print {
+            background: #ea580c;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25);
+        }
+
+        .btn-print:hover {
+            background: #c2410c;
+        }
+
+        .btn-back {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        .btn-back:hover {
+            background: #f8fafc;
+        }
+
+        @media print {
+            .receipt-action-bar {
+                display: none !important;
+            }
+            .receipt-page-container {
+                background: transparent !important;
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-page-container">
+        <!-- Action Toolbar -->
+        <div class="receipt-action-bar">
+            <a href="{{ url_for('billing') }}" class="btn-action btn-back">
+                <i class="fa-solid fa-arrow-left"></i> Back to POS
+            </a>
+            <a href="{{ url_for('history') }}" class="btn-action btn-back">
+                <i class="fa-solid fa-clock-rotate-left"></i> Order History
+            </a>
+            <button type="button" class="btn-action btn-print" onclick="window.print()">
+                <i class="fa-solid fa-print"></i> Print Receipt
+            </button>
+        </div>
+
+        <!-- Thermal Receipt Card -->
+        <div class="thermal-receipt" id="printableReceipt">
+            <!-- Jagged Top Edge (Visual Detail) -->
+            <div class="receipt-sawtooth-top"></div>
+
+            <!-- Receipt Header -->
+            <div class="receipt-header">
+                <div class="cafe-brand">
+                    <i class="fa-solid fa-mug-hot"></i>
+                    <h2>CAFETERIA BILLING SYSTEM</h2>
+                </div>
+                <p class="cafe-tagline">College Food Court & Student Center</p>
+                <p class="cafe-address">Campus Main Quad &bull; Counter No. 01</p>
+                <p class="cafe-gstin">GSTIN: 27AABCC1234F1Z5</p>
+            </div>
+
+            <div class="receipt-divider-dashed"></div>
+
+            <!-- Invoice & Customer Metadata -->
+            <div class="receipt-meta-grid">
+                <div class="meta-row">
+                    <span class="meta-label">INVOICE:</span>
+                    <strong class="meta-val">{{ bill.invoice_number }}</strong>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-label">DATE & TIME:</span>
+                    <span class="meta-val">{{ bill.created_at | format_datetime }}</span>
+                </div>
+                <div class="meta-row">
+                    <span class="meta-label">CUSTOMER:</span>
+                    <span class="meta-val">{{ bill.customer_name or 'Walk-in Customer' }}</span>
+                </div>
+                {% if bill.customer_phone %}
+                <div class="meta-row">
+                    <span class="meta-label">PHONE:</span>
+                    <span class="meta-val">{{ bill.customer_phone }}</span>
+                </div>
+                {% endif %}
+                <div class="meta-row">
+                    <span class="meta-label">PAYMENT:</span>
+                    <strong class="meta-val">{{ bill.payment_method | upper }}</strong>
+                </div>
+            </div>
+
+            <div class="receipt-divider-dashed"></div>
+
+            <!-- Items Table -->
+            <table class="receipt-items-table">
+                <thead>
+                    <tr>
+                        <th class="th-item">ITEM</th>
+                        <th class="th-qty">QTY</th>
+                        <th class="th-rate">RATE</th>
+                        <th class="th-amt">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in bill['items'] %}
+                    <tr>
+                        <td class="td-item">
+                            <span class="item-line-name">{{ item.item_name }}</span>
+                            <small class="item-line-cat">[{{ item.category }}]</small>
+                        </td>
+                        <td class="td-qty">{{ item.quantity }}</td>
+                        <td class="td-rate">{{ item.unit_price | currency }}</td>
+                        <td class="td-amt">{{ item.total_price | currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="receipt-divider-dashed"></div>
+
+            <!-- Bill Totals & Taxes -->
+            <div class="receipt-totals-box">
+                <div class="total-row">
+                    <span>Subtotal:</span>
+                    <span>{{ bill.subtotal | currency }}</span>
+                </div>
+
+                {% if bill.discount_amount and bill.discount_amount > 0 %}
+                <div class="total-row discount-row">
+                    <span>Discount:</span>
+                    <span>-{{ bill.discount_amount | currency }}</span>
+                </div>
+                {% endif %}
+
+                <div class="total-row">
+                    <span>CGST (2.5%):</span>
+                    <span>{{ (bill.gst_amount / 2.0) | currency }}</span>
+                </div>
+
+                <div class="total-row">
+                    <span>SGST (2.5%):</span>
+                    <span>{{ (bill.gst_amount / 2.0) | currency }}</span>
+                </div>
+
+                <div class="receipt-divider-solid"></div>
+
+                <div class="total-row grand-total-row">
+                    <span>GRAND TOTAL:</span>
+                    <span class="grand-total-price">{{ bill.grand_total | currency }}</span>
+                </div>
+
+                <div class="receipt-divider-solid"></div>
+            </div>
+
+            <!-- QR Code Simulation for UPI payment or receipt check -->
+            <div class="receipt-qr-section">
+                <div class="qr-mockup">
+                    <i class="fa-solid fa-qrcode fa-3x"></i>
+                </div>
+                <p class="qr-label">Scan to verify invoice / UPI Record</p>
+            </div>
+
+            <!-- Barcode Simulation -->
+            <div class="receipt-barcode">
+                <div class="barcode-lines"></div>
+                <span class="barcode-digits">{{ bill.invoice_number }}</span>
+            </div>
+
+            <!-- Footer Message -->
+            <div class="receipt-footer">
+                <p class="thank-you-msg">Thank You for Your Visit!</p>
+                <p>Fresh Food &bull; Quick Service &bull; Great Taste</p>
+                <p class="footer-note">Goods once sold cannot be returned without bill.</p>
+            </div>
+
+            <!-- Jagged Bottom Edge -->
+            <div class="receipt-sawtooth-bottom"></div>
+        </div>
+    </div>
+</body>
+</html>

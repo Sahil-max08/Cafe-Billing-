@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}POS Billing - Cafeteria Terminal{% endblock %}
+{% block page_title %}POS Billing Terminal{% endblock %}
+{% block breadcrumb %}Point of Sale &bull; Fast Order Punching & Receipt Generator{% endblock %}
+
+{% block content %}
+<div class="pos-layout">
+    <!-- Left Column: Menu Items Explorer -->
+    <div class="pos-catalog-section">
+        <!-- Search & Category Filters Bar -->
+        <div class="catalog-filter-bar">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="menuSearchInput" placeholder="Search item by name or keywords..." autocomplete="off">
+                <button type="button" id="clearSearchBtn" class="clear-search" style="display: none;">&times;</button>
+            </div>
+
+            <div class="category-tabs" id="categoryTabs">
+                <button type="button" class="category-tab active" data-category="all">
+                    <i class="fa-solid fa-border-all"></i> All Items
+                </button>
+                <button type="button" class="category-tab" data-category="Snacks">
+                    <i class="fa-solid fa-cookie-bite"></i> Snacks
+                </button>
+                <button type="button" class="category-tab" data-category="Meals">
+                    <i class="fa-solid fa-bowl-rice"></i> Meals
+                </button>
+                <button type="button" class="category-tab" data-category="Beverages">
+                    <i class="fa-solid fa-mug-hot"></i> Beverages
+                </button>
+                <button type="button" class="category-tab" data-category="Desserts">
+                    <i class="fa-solid fa-ice-cream"></i> Desserts
+                </button>
+            </div>
+        </div>
+
+        <!-- Menu Items Grid -->
+        <div class="menu-grid" id="menuGrid">
+            {% for item in menu_items %}
+                <div class="menu-card"
+                     data-id="{{ item.id }}"
+                     data-name="{{ item.name }}"
+                     data-price="{{ item.price }}"
+                     data-category="{{ item.category }}"
+                     onclick="posApp.addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }}, '{{ item.category }}')">
+                    <div class="card-top">
+                        <div class="diet-icon veg-icon" title="Pure Veg">
+                            <span class="diet-dot"></span>
+                        </div>
+                        <span class="category-badge category-{{ item.category | lower }}">{{ item.category }}</span>
+                    </div>
+
+                    <div class="card-info">
+                        <h4 class="item-name">{{ item.name }}</h4>
+                        {% if item.description %}
+                            <p class="item-desc">{{ item.description }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="card-bottom">
+                        <div class="item-price">{{ item.price | currency }}</div>
+                        <button type="button" class="btn-add-item" title="Add to current order">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div id="noItemsFound" class="empty-state-box" style="display: none;">
+            <i class="fa-solid fa-bowl-food fa-3x"></i>
+            <h3>No menu items match your search</h3>
+            <p>Try clearing filters or search terms.</p>
+        </div>
+    </div>
+
+    <!-- Right Column: Active Order & Checkout Register -->
+    <div class="pos-register-section">
+        <div class="register-card">
+            <!-- Order Header -->
+            <div class="register-header">
+                <div class="register-title">
+                    <div class="title-with-badge">
+                        <h3>Current Order</h3>
+                        <span id="cartCountBadge" class="badge-count">0 items</span>
+                    </div>
+                    <small id="currentDateTime" class="text-muted">Live Register</small>
+                </div>
+                <button type="button" class="btn-clear-cart" onclick="posApp.clearCart()" title="Reset Order">
+                    <i class="fa-solid fa-trash-can"></i> Clear
+                </button>
+            </div>
+
+            <!-- Customer Details (Optional) -->
+            <div class="customer-input-row">
+                <div class="input-group-sm">
+                    <label for="customerName"><i class="fa-solid fa-user"></i> Customer Name</label>
+                    <input type="text" id="customerName" placeholder="e.g. Walk-in / Sahil" autocomplete="off">
+                </div>
+                <div class="input-group-sm">
+                    <label for="customerPhone"><i class="fa-solid fa-phone"></i> Mobile No. (Optional)</label>
+                    <input type="tel" id="customerPhone" placeholder="10-digit number" maxlength="10" autocomplete="off">
+                </div>
+            </div>
+
+            <!-- Cart Items Container -->
+            <div class="cart-items-wrapper">
+                <div id="cartEmptyState" class="cart-empty-state">
+                    <div class="empty-cart-icon">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                    </div>
+                    <h4>Your order cart is empty</h4>
+                    <p>Click any food item from the menu on the left to add it here.</p>
+                </div>
+
+                <div id="cartItemsList" class="cart-items-list" style="display: none;">
+                    <!-- Injected by billing.js -->
+                </div>
+            </div>
+
+            <!-- Financial Summary & Calculations -->
+            <div class="register-summary">
+                <div class="summary-line">
+                    <span>Subtotal</span>
+                    <strong id="displaySubtotal">₹0.00</strong>
+                </div>
+
+                <!-- Discount Input with Fast Preset Chips -->
+                <div class="summary-line-complex">
+                    <div class="line-label">
+                        <span>Discount (₹)</span>
+                        <div class="discount-chips">
+                            <button type="button" class="chip-btn" onclick="posApp.setDiscount(0)">₹0</button>
+                            <button type="button" class="chip-btn" onclick="posApp.setDiscount(10)">₹10</button>
+                            <button type="button" class="chip-btn" onclick="posApp.setDiscount(20)">₹20</button>
+                            <button type="button" class="chip-btn" onclick="posApp.setDiscount(50)">₹50</button>
+                        </div>
+                    </div>
+                    <div class="discount-input-wrap">
+                        <input type="number" id="discountInput" min="0" step="1" value="0" oninput="posApp.onDiscountChange()">
+                    </div>
+                </div>
+
+                <!-- GST Rate Selector & Computed GST -->
+                <div class="summary-line-complex">
+                    <div class="line-label">
+                        <span>GST Tax</span>
+                        <div class="gst-selector">
+                            <label><input type="radio" name="gstRateOption" value="0" onchange="posApp.onGstChange(0)"> 0%</label>
+                            <label><input type="radio" name="gstRateOption" value="5" checked onchange="posApp.onGstChange(5)"> 5%</label>
+                            <label><input type="radio" name="gstRateOption" value="12" onchange="posApp.onGstChange(12)"> 12%</label>
+                        </div>
+                    </div>
+                    <strong id="displayGst">₹0.00</strong>
+                </div>
+
+                <div class="summary-divider"></div>
+
+                <!-- Grand Total -->
+                <div class="summary-line grand-total-line">
+                    <div class="total-label-box">
+                        <span>Grand Total</span>
+                        <small class="tax-inclusive-tag">Inclusive of all taxes</small>
+                    </div>
+                    <div class="grand-total-val" id="displayGrandTotal">₹0.00</div>
+                </div>
+
+                <!-- Payment Method Toggle -->
+                <div class="payment-method-selector">
+                    <label class="section-micro-label">Payment Mode</label>
+                    <div class="payment-options-grid">
+                        <label class="payment-option active" data-method="Cash">
+                            <input type="radio" name="paymentMethod" value="Cash" checked>
+                            <i class="fa-solid fa-money-bill-wave"></i>
+                            <span>Cash</span>
+                        </label>
+                        <label class="payment-option" data-method="UPI">
+                            <input type="radio" name="paymentMethod" value="UPI">
+                            <i class="fa-solid fa-qrcode"></i>
+                            <span>UPI / QR</span>
+                        </label>
+                        <label class="payment-option" data-method="Card">
+                            <input type="radio" name="paymentMethod" value="Card">
+                            <i class="fa-solid fa-credit-card"></i>
+                            <span>Card</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit / Checkout Button -->
+                <button type="button" id="btnCompleteOrder" class="btn btn-primary btn-checkout" onclick="posApp.submitOrder()">
+                    <span class="btn-text"><i class="fa-solid fa-receipt"></i> Complete Bill & Print</span>
+                    <span class="btn-spinner" style="display: none;"><i class="fa-solid fa-circle-notch fa-spin"></i> Processing...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/billing.js') }}"></script>
+{% endblock %}
